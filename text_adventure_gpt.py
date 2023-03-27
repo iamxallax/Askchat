@@ -24,26 +24,31 @@ def askgpt(question, background=None, conversation=None):
 def create_summary():
     conversation = [{'role': 'system', 'content': 'You are a dungeon master that must lead players through an action-packed short adventure'},
                     {'role': 'user', 'content': 'Create a one paragraph D&D adventure.'},
-                    {'role': 'assistant', 'content': "As the players enter the bustling city, they are approached by a hooded figure who hands them a mysterious note. The note is an invitation to a secret underground fighting tournament, where the winner will be rewarded with a rare and powerful magical item. The tournament takes place in a labyrinthine maze, where the players must battle other formidable opponents to reach the end. But the maze is filled with traps and puzzles that must be solved to progress. As they fight their way through, the players discover that the tournament is run by a shadowy organization with sinister motives. They must decide whether to continue on and claim the prize, or to expose the organization's secrets and stop them once and for all."},
+                    {'role': 'assistant', 'content': "Deep beneath the ocean's surface, the players wake up in a flooded temple, their memories foggy and their gear missing. They're forced to rely on their wits, as they explore the temple's damp halls and chambers, fighting off the temple's guardians and searching for a way out. But their problems don't end there. The temple is haunted by the ghost of an ancient High Priestess, who haunts the players' dreams and demands to be set free. If the players don't appease her, they'll never make it out alive. Along the way, they uncover a plot by a rival faction of merfolk who seek to destroy the temple and exploit the ancient artifacts it protects. The players must choose between solving the temple's puzzles, satisfying the ghost's demands, and stopping the rival faction from achieving their goal."},
                     ]
-    adventure = askgpt('Now create another one is vastly different to the first.', conversation=conversation)
+    adventure = askgpt('Now create another one with a similar structure but a different theme and plot. Include details about the setting and the starting point of the story.', conversation=conversation)
     return adventure['message']
 
 def get_next_step(adventure, steps_taken=None):
-    prompt = '''This is the summary of an adventure. Start at the vevry start of the adventure. Provide a few detailed sentences describing the next step in the adventure. Then provide 2-4 options the player might take next. Each option should consist only of an option that the player might choose and should not include additional narrative. The response should be formatted as a json object using the schema {next_step: "...", options: ["option 1", "option 2", ...]}
+    prompt = '''Provide a few detailed sentences describing the next step in the adventure. Then provide 2-4 options the player might take next. Each option should consist only of an option that the player might choose and should not include additional narrative. The response should be formatted as a json object using the schema {next_step: "...", options: ["option 1", "option 2", ...]}. The story should be no more than 10 steps, with an obvious climax and a resolution.
     '''    
 
     if steps_taken:
-        prompt += "The user has already taken one or more steps. here is the description of the setting and the steps the user took. make sure the new step progresses the story and incorporates the actions of the user's previous steps: "
+        prompt += "The user has already taken one or more steps. here is the description of the setting and the steps the user took. Make sure the new step progresses the story and incorporates the actions of the user's previous steps: "
         for (step, chosen_option) in steps_taken:
-            prompt += f"Step {steps_taken.index((step, chosen_option)) + 1}: {step}. Chosen action: {chosen_option}."
+            prompt += f"Step {steps_taken.index((step, chosen_option)) + 1}: {step}. Chosen action: {chosen_option}. "
     prompt += "Here is the adventure: " + adventure
     while True:
         try:
             output = askgpt(prompt)
+            print(output)
             return json.loads(output['message'])
         except json.decoder.JSONDecodeError as err:
             print(err)
+
+def separate_summary(summary):
+    output = askgpt('I need you to separate the beginning of this story from the rest. The beginning should include the setting and the actions that happen immediatly. Only respond with the separated beginning introduction. Here is the story: ' + summary)
+    return output['message']
 
 def ask(options):
     d = {str(i): opt for i, opt in enumerate(options, 1)}
@@ -55,13 +60,17 @@ def ask(options):
             return d[response]
 
 adventure = create_summary()
+intro = separate_summary(adventure)
 print(adventure)
+print(intro)
 
 running = True
 previous_steps = []
+round = 1
 while running:
-    response = get_next_step(adventure=adventure, steps_taken=previous_steps)
+    response = get_next_step(adventure=adventure if round != 1 else intro, steps_taken=previous_steps)
     description = response['next_step']
     print(description)
     choice = ask(response['options'])
     previous_steps.append((description, choice))
+    round += 1
