@@ -1,0 +1,84 @@
+def create_script(n):
+    conversation = [{'role': 'system', 'content': 'you are a creative author that is very good at creating fun and exciting adventures in the form of lists of events'},
+                    {'role': 'user', 'content': '''create a 10 part script for a short roleplaying adventure. each event should have 2-4 different options for the adventurers to do, 
+                    allowing them to use different strategies, but still staying in the events of the story. only provide the options, 
+                    and not how the adventurers would go about doing them.'''},
+                    {'role': 'assistant', 'content': """
+                    1. The adventurers are hired by a small town to investigate a series of mysterious disappearances around the area.
+                    2. The group arrives in town and must talk to various NPCs to gather information and clues on the missing people.
+                         Options: 
+                         - Talk to the local sheriff for official information
+                         - Visit the local tavern for rumors and hearsay
+                         - Investigate the site where the first person went missing
+                    3. The group discovers that the missing people have been taken by a group of bandits who reside in the nearby mountains.
+                         Options:
+                         - Confront the bandits head-on with force
+                         - Sneak into the bandit's hideout and rescue the missing people
+                         - Try to negotiate with the bandits for the release of the missing people
+                    4. The group must travel through treacherous terrain to reach the bandit's hideout.
+                         Options:
+                         - Traverse the mountains on foot
+                         - Take a risky shortcut through a dangerous pass
+                         - Hire a guide to lead the way
+                    5. The group successfully reaches the bandit's hideout and engages in a fierce battle.
+                         Options:
+                         - Fight the bandits head-on using brute force
+                         - Strategize and attempt to outsmart the bandits
+                         - Capture and interrogate a bandit to gain valuable information
+                    6. The group rescues the missing people and discovers that the bandits were hired to take them as part of a larger nefarious plot.
+                         Options:
+                         - Follow the trail to uncover more about the plot
+                         - Hire a local detective to investigate
+                         - Return to town with the missing people and let the authorities handle it
+                    7. The group discovers that the mastermind behind the plot is a wealthy lord who is using the missing people for dark experiments.
+                         Options:
+                         - Confront the lord head-on with force
+                         - Attempt to infiltrate the lord's castle and rescue the rest of the missing people
+                         - Bribe the lord to release the missing people
+                    8. The group must find a way to enter the lord's heavily guarded castle undetected.
+                         Options:
+                         - Disguise themselves as guards or servants
+                         - Use invisibility spells or potions to become undetectable
+                         - Create a distraction to draw the guards away
+                    9. The group successfully infiltrates the lord's castle and engages in a final showdown with the lord and his minions.
+                         Options:
+                         - Fight the lord and his minions head-on using brute force
+                         - Strategize and attempt to outsmart the lord and his minions
+                         - Attempt to negotiate with the lord to release the missing people and stop his nefarious plot
+                    10. The group emerges victorious and frees the rest of the missing people. They return to town and are hailed as heroes, rewarded for their bravery and quick thinking.
+                    """}]
+    output = askgpt(f'''create another script in the same format that is {n} events long. make sure you include the options. it should be action packed, and resolved by the end. Make sure you address the reader using words like "you"''', conversation=conversation)
+    return output['message']
+
+def list_scenes(n, script):
+    seperated_script = []
+    script = script.replace('1. ', '')
+    script = script.replace(f'{n}. ', '')
+    for i in range(2, n):
+        split_script = script.split(f'{i}. ')
+        split_script, script = split_script[0], split_script[1]
+        seperated_script.append(split_script)
+    seperated_script.append(script)
+    return seperated_script
+
+def format(event):
+    conversation = [{'role': 'user', 'content': '''I have a section of a roleplaying adventure that I need you to format into a .ini file. 
+                        it will include a body of text and then a couple of options for the adventuring party to choose from. 
+                        I want you to format the file so that there is a title name for the section like this: [example_title]. 
+                        make sure the name of the section is VERY specific to the text, so there would be no overlap of names in the future. 
+                        after that, set __text to the body of text. then have __option1 equal the first option, then a carat, then a name for the next section that is VERY specific to the text in the option, 
+                        which should include "from_example_section". an example for that would be "attack_option_from_noble_explaining_location_of_amulet". as you can see, it can be very long. 
+                        do not include a space between the option, the carat, and the name of the next section. do the same with option2, option3, and so on. do not respond with anything other than the formatted .ini file. 
+                        I will send the section of the adventure in the next message.'''},
+                    {'role': 'assistant', 'content': 'I understand your request. Please send me the section of the adventure, and I will format it into a .ini file for you.'},
+                    {'role': 'user', 'content': """first let me show you an ideal formatted .ini file from one of my previous chats with you: [travel_through_dense_forest]
+                        __text = The group must travel through a dense forest to reach the rival noble's castle.
+                        __option1 = Follow the main path through the forest^follow_main_path_from_travel_through_dense_forest
+                        __option2 = Take a shortcut through the heart of the forest^take_shortcut_from_travel_through_dense_forest
+                        __option3 = Hire a local guide to navigate the forest^hire_guide_from_travel_through_dense_forest
+                        
+                        I want the file formatted exactly like this. except add double quotes before and after the __text value, and the options' values before the carat. 
+                        also, do not have it in a makefile or css box. do not include any other text other than the formatted file. I will send the text I want you to format in the next message."""},
+                    {'role': 'assistant', 'content': "Understood. Please provide me with the text you want me to format into a .ini file using the same structure as the example you provided."}]
+    output = askgpt(event, conversation=conversation)
+    return output['message']

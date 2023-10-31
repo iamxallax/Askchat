@@ -47,7 +47,7 @@ def create_summary():
 
 def get_next_step(conversation):
     
-    prompt = '''The response to this prompt must be a valid json object. Given the adventure above, first provide a few detailed sentences describing the next step in the adventure above. This corresponds to the attribute "next_step" in the json-formatted response. Then provide 2-4 options the player might take next. Each option should consist only of an action that the player might choose and should not include additional narrative. Each option should have "Skill [example_number] - " where the example_number is a number between 1 and 10, that indicates how difficult that action would be. The number should rarely by a 9 or 10, as those are reserved to actions lik e seducing dragons or other actions of that difficulty. Assume the player knows nothing about the plot, so describe in detail how they got from point A to point B. These options correspond to the json object "options"'''
+    prompt = '''The response to this prompt must be a valid json object. Given the adventure above, first provide a few detailed sentences describing the next step in the adventure above. This corresponds to the attribute "next_step" in the json-formatted response. Then provide 2-4 options the player might take next. Each option should consist only of an action that the player might choose and should not include additional narrative. Each option should have "Skill [example_number] - " where the example_number is a number between 1 and 10, that indicates how difficult that action would be. The number should rarely by a 9 or 10, as those are reserved to actions lik e seducing dragons or other actions of that difficulty. Doing simple actions like agreeing to someone or walking somewhere shouldn't be difficult. Assume the player knows nothing about the plot, so describe in detail how they got from point A to point B. These options correspond to the json object "options"'''
     
     prompt += f'''It is extremely important that the entire story arc is no more than 25 steps, with an obvious climax and a resolution. Limit the character's options to choices that advance the plot. The user has already taken one or more steps; Make sure the new step incorporates the actions of the user's previous steps.'''
         
@@ -79,14 +79,7 @@ def ask(options):
             print(f'{i}: {option}')
         response = input('choose a number: ').strip()
         if response in d:
-            text = d[response]
-            text = text.replace("Skill ", '')
-            skill_level = int(text.split(' - ')[0])
-            if grade_roleplay(ask_description()) >= skill_level:
-                success = True
-            else:
-                success = False
-            return (d[response], success)
+            return (d[response])
         
 def ask_description():
     response = input('Describe in detail how you would go about doing this action:\n\n')
@@ -108,6 +101,17 @@ def grade_roleplay(string):
         except ValueError:
             print('The AI did it wrong...')
 
+def check_success(text, level):
+    text = text.replace("Skill ", '')
+    skill_level = int(text.split(' - ')[0])
+    if level >= skill_level:
+        return None
+    elif grade_roleplay(ask_description()) >= skill_level:
+        success = True
+    else:
+        success = False
+    return success
+
 def main():
 
     """Create the elements of the converstion that should be repeated with each prompt before the game loop, then add new prompts each iteration of the while loop."""
@@ -116,8 +120,8 @@ def main():
 
     intro = "Deep beneath the ocean's surface, the players wake up in a flooded temple, their memories foggy and their gear missing. They're forced to rely on their wits, as they explore the temple's damp halls and chambers, fighting off the temple's guardians and searching for a way out"
 
-    # adventure = create_summary()
-    # intro = separate_summary(adventure)
+    adventure = create_summary()
+    intro = separate_summary(adventure)
 
     #print(adventure)
     print(intro)
@@ -126,6 +130,8 @@ def main():
                      'content': 'You are a fine tuned general language model that follows the prompt exactly.'},
                     {'role': 'assistant', 
                      'content': adventure}]
+    
+    character_level = 1
 
     round = 1
     running = True
@@ -134,20 +140,20 @@ def main():
         description = response['next_step']
         print(f'{round=}')
         print(description + '\n')
-        choice, success = ask(response['options'])
-        print(success)
-        
-        if round == 10:
-            print('\n' * 3, 'Here is the actual plot: "' + adventure + '"')
-            exit()
+        choice = ask(response['options'])
+        success = check_success(choice, character_level)
+        #print(success)
 
         conversation.append({'role': 'assistant', 'content': description})
         conversation.append({'role': 'user', 'content': choice})
-        if not success:
+        if success == False:
             conversation.append({'role': 'user', 'content': "The user did not succeed in completing this action."})
+        elif success == True:
+            character_level += 1
+        print(f'{character_level=}')
         round += 1
 
 
 
 # ChatGPT_model = "gpt-4"  
-#main()
+main()
